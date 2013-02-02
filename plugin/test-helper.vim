@@ -4,25 +4,46 @@
 " Version:     0.1
 "=============================================================================
 
-if exists('loaded_test_helper') || &cp
-  finish
-endif
-let loaded_test_helper=1
+"if exists('loaded_test_helper') || &cp
+"  finish
+"endif
+"let loaded_test_helper=1
 
 function! s:TestHelper(filename) 
+    let g:file_map = {}
+    if !exists("g:testh_running") || (bufwinnr(g:testh_running) == -1) 
+        silent! 99wincmd h
+        if bufwinnr(g:testh_running) == -1
+            vertical split
+            let v:errmsg="nothing"
+            silent! bnext
+            if 'nothing' != v:errmsg
+                enew
+            endif
+        endif
+        return
+    endif
+
     function! s:CreateEntriesFromDir(recursive)
         normal! mk
         let line=line('.')
-        let name = inputdialog('Is this the path you wish to execute?')
+        let name = inputdialog('Is this the path you wish to execute? ', expand('%:p'))
         if strlen(name) == 0
             return
         endif
-    
-        if exists(':TestHelper') != 2
-            command -nargs=? -complete=file TestHelper call <SID>TestHelper('<args>')
-        endif
+        let g:file_map[expand('%:p')] = name
     endfunction
-    nnoremap <buffer> <silent> <LocalLeader>c :call <SID>CreateEntriesFromDir(1)<CR>
+
+    nnoremap <buffer> <silent> <LocalLeader>E :call <SID>CreateEntriesFromDir(1)<CR>
+
+    let bufname=escape(substitute(expand('%:p', 0), '\\', '/', 'g'), ' ')
+    let g:testh_running = bufnr(bufname.'\>')
+
+    if g:testh_running == -1
+        call confirm('This is weird', "&OK", 1)
+        unlet g:testh_running
+    endif
+
 endfunction
 if exists(':TestHelper') != 2
     command! -nargs=? -complete=file TestHelper call <SID>TestHelper('<args>')
@@ -45,9 +66,10 @@ if !exists("*<SID>DoToggleTestMaps()")
     endfunction
 endif 
 
+Test_Helper
 nnoremap <script> <Plug>ToggleTestHelper :call <SID>DoToggleTestHelper()<CR>
-if !hasmapto('<Plug>ToggleTestHelper')
-    nmap <silent> <F11> <Plug>ToggleTestHelper
-endif
+"if !hasmapto('<Plug>ToggleTestHelper')
+    nmap <silent> <C-H> <Plug>ToggleTestHelper
+"endif
 
 finish
