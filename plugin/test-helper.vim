@@ -4,14 +4,20 @@
 " Version:     0.1
 "=============================================================================
 
-"if exists('loaded_test_helper') || &cp
-"  finish
-"endif
-"let loaded_test_helper=1
+if exists('loaded_test_helper') || &cp
+  finish
+endif
+let loaded_test_helper=1
 
 function! s:TestHelper(filename) 
     let g:file_map = {}
+
     if !exists("g:testh_running") || (bufwinnr(g:testh_running) == -1) 
+        exec 'silent vertical new testh'
+        silent! wincmd H
+        exec 'vertical resize 24'
+        setlocal nomodeline
+    else
         silent! 99wincmd h
         if bufwinnr(g:testh_running) == -1
             vertical split
@@ -20,9 +26,12 @@ function! s:TestHelper(filename)
             if 'nothing' != v:errmsg
                 enew
             endif
+            g:testh_running = bufnr(bufname.'\>')
         endif
         return
     endif
+
+    call append(line('$'), g:file_map)
 
     function! s:CreateEntriesFromDir(recursive)
         normal! mk
@@ -37,12 +46,11 @@ function! s:TestHelper(filename)
     nnoremap <buffer> <silent> <LocalLeader>E :call <SID>CreateEntriesFromDir(1)<CR>
 
     let bufname=escape(substitute(expand('%:p', 0), '\\', '/', 'g'), ' ')
-    let g:testh_running = bufnr(bufname.'\>')
 
-    if g:testh_running == -1
-        call confirm('This is weird', "&OK", 1)
-        unlet g:testh_running
-    endif
+    "if g:testh_running == -1
+    "    call confirm('This is weird', "&OK", 1)
+    "    unlet g:testh_running
+    "endif
 
 endfunction
 if exists(':TestHelper') != 2
@@ -66,10 +74,9 @@ if !exists("*<SID>DoToggleTestMaps()")
     endfunction
 endif 
 
-Test_Helper
 nnoremap <script> <Plug>ToggleTestHelper :call <SID>DoToggleTestHelper()<CR>
-"if !hasmapto('<Plug>ToggleTestHelper')
+if !hasmapto('<Plug>ToggleTestHelper')
     nmap <silent> <C-H> <Plug>ToggleTestHelper
-"endif
+endif
 
 finish
